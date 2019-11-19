@@ -6,6 +6,7 @@ import sqlite3
 from collections import namedtuple
 
 from astropy.time import Time
+from astropy.modeling import rotations
 import numpy as np
 
 from ..datamodels import Level1bModel
