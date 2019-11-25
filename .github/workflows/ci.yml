@@ -17,6 +17,7 @@ jobs:
         #    pip_args: "numpy~=1.16.0 .[test]"
 
     env:
+      PYTHONUNBUFFERED: 1
       CRDS_SERVER_URL: "https://jwst-crds.edu"
       CRDS_PATH: "/tmp/crds_cache"
       CRDS_CLIENT_RETRY_COUNT: 3
