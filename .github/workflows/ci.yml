@@ -11,9 +11,10 @@ jobs:
       matrix:
         python-version: [3.6, 3.7]
         pip_args: ["-r requirements-sdp.txt .", "-r requirements-dev.txt .[test]"]
-        include:
-          - python-version: 3.6
-            pip_args: "numpy~=1.16.0 .[test]"
+        # TODO: Why is "python-version" invalid?
+        #include:
+        #  - python-version: 3.6
+        #    pip_args: "numpy~=1.16.0 .[test]"
 
     env:
       CRDS_SERVER_URL: "https://jwst-crds.edu"
