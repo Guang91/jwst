@@ -2,6 +2,13 @@ name: ci
 
 on: [push, pull_request]
 
+env:
+  PYTHONUNBUFFERED: 1
+  CRDS_SERVER_URL: "https://jwst-crds.edu"
+  CRDS_PATH: "/tmp/crds_cache"
+  CRDS_CLIENT_RETRY_COUNT: 3
+  CRDS_CLIENT_RETRY_DELAY_SECONDS: 30
+
 jobs:
   lint:
     runs-on: [ubuntu-latest]
@@ -24,9 +31,9 @@ jobs:
     strategy:
       matrix:
         python_version: [3.6, 3.7]
-        name: [HEAD, SDP, DEV]
+        name: [BUILTIN, SDP, DEV]
         include:
-          - name: HEAD
+          - name: BUILTIN
             pip_args: ".[test]"
           - name: SDP
             pip_args: "-r requirements-sdp.txt .[test]"
@@ -55,22 +62,20 @@ jobs:
     strategy:
       matrix:
         python_version: [3.6, 3.7]
-        name: [HEAD, SDP, DEV]    
+        name: [BUILTIN, SDP, DEV]    
         include:
-          - name: HEAD
+          - name: BUILTIN
             pip_args: ".[test]"
           - name: SDP
             pip_args: "-r requirements-sdp.txt .[test]"
           - name: DEV
             python_version: "3.7"
             pip_args: "-r requirements-dev.txt .[test]"
+        exclude:
+          - name: DEV
+            python_version: "3.6"
 
     env:
-      PYTHONUNBUFFERED: 1
-      CRDS_SERVER_URL: "https://jwst-crds.edu"
-      CRDS_PATH: "/tmp/crds_cache"
-      CRDS_CLIENT_RETRY_COUNT: 3
-      CRDS_CLIENT_RETRY_DELAY_SECONDS: 30
       PIP_ARGS: "${{ matrix.pip_args }}"
 
     steps:
