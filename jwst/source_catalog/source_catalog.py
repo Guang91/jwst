@@ -6,6 +6,8 @@ import photutils
 
 from ..datamodels import DrizProductModel
 
+# Conversion factor from MJy/sr to uJy/arcsec^2
+MJSR_TO_UJA2 = (u.megajansky/u.steradian).to(u.microjansky/u.arcsecond/u.arcsecond)
 
 def make_source_catalog(model, kernel_fwhm, kernel_xsize, kernel_ysize,
                         snr_threshold, npixels, deblend_nlevels=32,
@@ -155,7 +157,7 @@ def make_source_catalog(model, kernel_fwhm, kernel_xsize, kernel_ysize,
         micro_Jy = np.full(nsources, np.nan)
     else:
         micro_Jy = (catalog['source_sum'] *
-                    model.meta.photometry.conversion_microjanskys *
+                    MJSR_TO_UJA2 *
                     model.meta.photometry.pixelarea_arcsecsq)
 
     # define AB mag
