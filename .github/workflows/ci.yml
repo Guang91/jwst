@@ -24,8 +24,17 @@ jobs:
     strategy:
       matrix:
         python_version: [3.6, 3.7]
-        pip_args: [".", "-r requirements-sdp.txt .", "-r requirements-dev.txt ."]
         name: [HEAD, SDP, DEV]
+        include:
+          - name: HEAD
+            pip_args: ".[test]"
+          - name: SDP
+            pip_args: "-r requirements-sdp.txt .[test]"
+          - name: DEV
+            pip_args: "-r requirements-dev.txt .[test]"
+
+    env:
+      PIP_ARGS: ${{ matrix.pip_args }}
 
     steps:
     - uses: actions/checkout@v1
@@ -45,8 +54,14 @@ jobs:
     strategy:
       matrix:
         python_version: [3.6, 3.7]
-        pip_args: [".[test]", "-r requirements-sdp.txt .[test]", "-r requirements-dev.txt .[test]"]
         name: [HEAD, SDP, DEV]    
+        include:
+          - name: HEAD
+            pip_args: ".[test]"
+          - name: SDP
+            pip_args: "-r requirements-sdp.txt .[test]"
+          - name: DEV
+            pip_args: "-r requirements-dev.txt .[test]"
 
     env:
       PYTHONUNBUFFERED: 1
