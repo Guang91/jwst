@@ -135,6 +135,7 @@ class ResampleData:
                 blevel = img.meta.background.level
                 if not img.meta.background.subtracted and blevel is not None:
                     img.data -= blevel
+                    img.meta.background.subtracted = True
 
                 outwcs_pscale = output_model.meta.wcsinfo.cdelt1
                 wcslin_pscale = img.meta.wcsinfo.cdelt1
