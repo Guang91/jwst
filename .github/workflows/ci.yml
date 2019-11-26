@@ -18,7 +18,7 @@ jobs:
         flake8 jwst --exit-zero
      
   build:
-    name: "Build: ${{ matrix.name }}:${{ python_version }}"
+    name: "Build: ${{ matrix.name }}:${{ matrix.python_version }}"
     runs-on: ubuntu-latest
     
     strategy:
@@ -39,7 +39,7 @@ jobs:
         pip install ${PIP_ARGS}
         
   tests:
-    name: "Test: ${{ matrix.name }}:${{ python_version }}"
+    name: "Test: ${{ matrix.name }}:${{ matrix.python_version }}"
     runs-on: ubuntu-latest
 
     strategy:
