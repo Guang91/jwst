@@ -58,8 +58,9 @@ jobs:
     needs: [build]
     name: "Test: ${{ matrix.name }}:${{ matrix.python_version }}"
     runs-on: ubuntu-latest
-
+    
     strategy:
+      max-parallel: 1
       matrix:
         python_version: [3.6, 3.7]
         name: [BUILTIN, SDP, DEV]    
