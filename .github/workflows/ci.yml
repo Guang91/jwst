@@ -3,18 +3,50 @@ name: ci
 on: [push, pull_request]
 
 jobs:
-  build:
+  lint:
+    runs-on: [ubuntu-latest]
 
+    steps:
+    - uses: actions/setup-python@v1
+      with:
+        python-version: 3.7
+    - name: Lint with flake8
+      run: |
+        pip install flake8
+        # stop the build if there are Python syntax errors or undefined names
+        flake8 jwst --count --select=E9,F63,F7,F82 --show-source --statistics
+        flake8 jwst --exit-zero
+     
+  build:
+    name: "Build: ${{ runner.os }}:${{ matrix.name }}:${{ python_version }}"
     runs-on: ubuntu-latest
+    
     strategy:
-      max-parallel: 4
       matrix:
-        python-version: [3.6, 3.7]
-        pip_args: ["-r requirements-sdp.txt .", "-r requirements-dev.txt .[test]"]
-        # TODO: Why is "python-version" invalid?
-        #include:
-        #  - python-version: 3.6
-        #    pip_args: "numpy~=1.16.0 .[test]"
+        python_version: [3.6, 3.7]
+        pip_args: [".", "-r requirements-sdp.txt .", "-r requirements-dev.txt ."]
+        name: [HEAD, SDP, DEV]
+
+    steps:
+    - uses: actions/checkout@v1
+    - name: Set up Python ${{ matrix.python_version }}
+      uses: actions/setup-python@v1
+      with:
+        python-version: ${{ matrix.python_version }}
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install ${PIP_ARGS}
+        
+  tests:
+    name: "Test: ${{ runner.os }}:${{ matrix.name }}:${{ python_version }}"
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        python_version: [3.6, 3.7]
+        pip_args: [".[test]", "-r requirements-sdp.txt .[test]", "-r requirements-dev.txt .[test]"]
+        name: [HEAD, SDP, DEV]    
 
     env:
       PYTHONUNBUFFERED: 1
@@ -23,24 +55,23 @@ jobs:
       CRDS_CLIENT_RETRY_COUNT: 3
       CRDS_CLIENT_RETRY_DELAY_SECONDS: 30
       PIP_ARGS: "${{ matrix.pip_args }}"
-      
+
     steps:
-      
     - uses: actions/checkout@v1
-    - name: Set up Python ${{ matrix.python-version }}
+    - name: Set up Python ${{ matrix.python_version }}
       uses: actions/setup-python@v1
       with:
-        python-version: ${{ matrix.python-version }}
-    - name: Install dependencies
+        python-version: ${{ matrix.python_version }}
+    
+    - name: Build
       run: |
-        python -m pip install --upgrade pip
+        pip install --upgrade pip
         pip install ${PIP_ARGS}
-    - name: Lint with flake8
-      run: |
-        pip install flake8
-        # stop the build if there are Python syntax errors or undefined names
-        flake8 jwst --count --select=E9,F63,F7,F82 --show-source --statistics
-        flake8 jwst --exit-zero
-    - name: Test with pytest
-      run: |
-        pytest --cov-report=xml --cov=./
+          
+    - name: Test
+      run: pytest --cov-report=xml --cov=./
+
+    - uses: codecov/codecov-actions@v1
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        flags: unittests
