@@ -192,11 +192,11 @@ class OutlierDetection:
             for model in drizzled_models:
                 if save_intermediate_results:
                     log.info("Writing out resampled exposures...")
-                    self.save_model(
-                        model,
-                        output_file=model.meta.filename,
-                        suffix=self.resample_suffix
-                    )
+                    #self.save_model(
+                    #    model,
+                    #    output_file=model.meta.filename,
+                    #    suffix=self.resample_suffix
+                    #)
         else:
             drizzled_models = self.input_models
             for i in range(len(self.input_models)):
