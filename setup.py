@@ -1,5 +1,4 @@
 import os
-import sys
 from os.path import basename
 from setuptools import setup, find_packages
 from glob import glob
@@ -46,7 +45,7 @@ DOCS_REQUIRE = [
 ]
 TESTS_REQUIRE = [
     'ci-watson>=0.3.0',
-    'pytest',
+    'pytest<=5.3.5',
     'pytest-doctestplus',
     'requests_mock',
     'pytest-openfiles',
@@ -90,11 +89,16 @@ setup(
         'setuptools_scm',
     ],
     install_requires=[
-        'asdf @ git+https://github.com/spacetelescope/asdf@c1373db953c77b62541',
-        'astropy @ git+https://github.com/astropy/astropy@df61bbc22ed2fd5c8',
+        # asdf 2.6 will change a validator implementation detail whose
+        # behavior jwst currently relies upon.  See
+        # https://github.com/spacetelescope/asdf/pull/777
+        # We can remove the upper limit here once asdf 2.6 is released
+        # and jwst starts using the _visit_repeat_nodes flag.
+        'asdf~=2.5.0',
+        'astropy>=4.0',
         'crds>=7.2.7',
         'drizzle>=1.13',
-        'gwcs @ git+https://github.com/spacetelescope/gwcs@ace1c2c30a658',
+        'gwcs>=0.13.0',
         'jsonschema>=2.3,<4',
         'numpy>=1.16',
         'photutils>=0.7',
@@ -102,7 +106,7 @@ setup(
         'spherical-geometry>=1.2',
         'stsci.image>=2.3.3',
         'stsci.imagestats>=1.4',
-        'tweakwcs>=0.5.1',
+        'tweakwcs>=0.6.3',
     ],
     extras_require={
         'docs': DOCS_REQUIRE,

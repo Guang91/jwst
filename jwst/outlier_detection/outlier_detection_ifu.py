@@ -121,8 +121,11 @@ class OutlierDetectionIFU(OutlierDetection):
         for band in self.ifu_band:
             if self.instrument == 'MIRI':
                 cubestep = CubeBuildStep(config_file=cube_build_config,
-                                         channel=band,
+                                         channel=band,weighting='emsm',
                                          single=True)
+                # Set a reasonable default outlier scale for the MRS
+                # (to be removed once reasonable parameter files)
+                self.outlierpars['scale'] = '2.4 2.4'
 
             if self.instrument == 'NIRSPEC':
                 cubestep = CubeBuildStep(config_file=cube_build_config,
@@ -136,6 +139,7 @@ class OutlierDetectionIFU(OutlierDetection):
                     basepath=model.meta.filename,
                     suffix=self.resample_suffix
                 )
+
                 if save_intermediate_results:
                     log.info("Writing out resampled IFU cubes...")
                     model.save(model.meta.filename)
@@ -166,11 +170,16 @@ class OutlierDetectionIFU(OutlierDetection):
             # channels (MIRI) of data into a single frame to match the
             # original input...
             self.blot_median(median_model)
-            if save_intermediate_results:
-                log.info("Writing out BLOT images...")
-                self.blot_models.save(
-                    partial(self.make_output_path, suffix='blot')
+
+        if save_intermediate_results:
+            log.info("Writing out BLOT images...")
+
+            self.blot_models.save(
+                partial(self.make_output_path, suffix='blot')
                 )
+
+            for model in self.blot_models:
+                log.info("Blotted files {}".format(model.meta.filename))
 
         # Perform outlier detection using statistical comparisons between
         # each original input image and the blotted version of the
@@ -192,10 +201,16 @@ class OutlierDetectionIFU(OutlierDetection):
         maskpt = self.outlierpars.get('maskpt', 0.7)
         badmasks = []
         for w in resampled_wht:
-            mean_weight, _, _ = sigma_clipped_stats(w,
-                                                    sigma=3.0,
-                                                    mask_value=0.)
+            # Due to a bug in numpy.nanmean, need to check
+            # for a completely zero array
+            if not np.any(w):
+                mean_weight = 0.
+            else:
+                mean_weight, _, _ = sigma_clipped_stats(
+                    w, sigma=3.0, mask_value=0.
+                )
             weight_threshold = mean_weight * maskpt
+
             # Mask pixels were weight falls below MASKPT percent of
             #    the mean weight
             mask = np.less(w, weight_threshold)

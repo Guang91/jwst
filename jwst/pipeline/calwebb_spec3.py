@@ -6,8 +6,10 @@ from ..associations.lib.rules_level3_base import format_product
 from ..exp_to_source import multislit_to_container
 from ..master_background.master_background_step import split_container
 from ..stpipe import Pipeline
+from ..lib.exposure_types import is_moving_target
 
 # step imports
+from ..assign_mtwcs import assign_mtwcs_step
 from ..cube_build import cube_build_step
 from ..extract_1d import extract_1d_step
 from ..master_background import master_background_step
@@ -30,6 +32,7 @@ class Spec3Pipeline(Pipeline):
     Spec3Pipeline: Processes JWST spectroscopic exposures from Level 2b to 3.
 
     Included steps are:
+    assign moving target wcs (assign_mtwcs)
     master background subtraction (master_background)
     MIRI MRS background matching (mrs_imatch)
     outlier detection (outlier_detection)
@@ -44,6 +47,7 @@ class Spec3Pipeline(Pipeline):
 
     # Define aliases to steps
     step_defs = {
+        'assign_mtwcs': assign_mtwcs_step.AssignMTWcsStep,
         'master_background': master_background_step.MasterBackgroundStep,
         'mrs_imatch': mrs_imatch_step.MRSIMatchStep,
         'outlier_detection': outlier_detection_step.OutlierDetectionStep,
@@ -64,6 +68,20 @@ class Spec3Pipeline(Pipeline):
         """
         self.log.info('Starting calwebb_spec3 ...')
         asn_exptypes = ['science', 'background']
+
+        # Setup sub-step defaults
+        self.master_background.suffix = 'mbsub'
+        self.mrs_imatch.suffix = 'mrs_imatch'
+        self.outlier_detection.suffix = 'crf'
+        self.outlier_detection.save_results = self.save_results
+        self.resample_spec.suffix = 's2d'
+        self.resample_spec.save_results = self.save_results
+        self.cube_build.suffix = 's3d'
+        self.cube_build.save_results = self.save_results
+        self.extract_1d.suffix = 'x1d'
+        self.extract_1d.save_results = self.save_results
+        self.combine_1d.suffix = 'x1d'
+        self.combine_1d.save_results = self.save_results
 
         # Retrieve the inputs:
         # could either be done via LoadAsAssociation and then manually
@@ -88,6 +106,10 @@ class Spec3Pipeline(Pipeline):
         product = input_models.meta.asn_table.products[0].instance
         for member in product['members']:
             members_by_type[member['exptype'].lower()].append(member['expname'])
+
+        if is_moving_target(input_models):
+            self.log.info("Assigning WCS to a Moving Target exposure.")
+            input_models = self.assign_mtwcs(input_models)
 
         # If background data are present, call the master background step
         if members_by_type['background']:

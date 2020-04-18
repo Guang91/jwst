@@ -1,17 +1,357 @@
-0.14.3 (Unreleased)
-===================
+0.15.2 (unreleased)
+==================
+
+ami
+---
+
+- Reorganized step documentation [#4697]
 
 associations
 ------------
 
+- Update asn_from_list to have default values in the asn header [#4720]
+
+- Update rules so exclude dark files from associations [#4668]
+
+- Update association rules so that nodded observations procduce level 3 asn's [#4675]
+
+cmdline
+-------
+
+- Re-enable exeption tracebacks from strun for issues outside step processing [#4761]
+
+coron
+-----
+
+- Reorganized step documentation [#4697]
+
+datamodels
+----------
+
+- Deprecate ``DrizProductModel`` and ``MultiProductModel`` and replace with
+  updated versions of ``ImageModel`` and ``SlitModel`` that include "CON" and
+  "WHT" arrays for resampled data. [#4552]
+
+- Remove lev3_prod schema and move resample-related keywords to
+  core schema. [#4552]
+
+- Add data models for spectroscopic mode APCORR reference files. [#4770]
+
+- Added ``pupil`` to the ``FilteroffsetModel`` to support NIRCAM and NIRISS WCS. [#4750]
+
+- Added FASTGRPAVG[8,16,32,64] to the READPATT keyword allowed values. [#4818]
+
+exp_to_source
+-------------
+
+- Resulting MultiExposureModels are now updated with header information from the inputs. [#4771]
+
+extract_1d
+----------
+
+- Updates for handling resampled input data as ``ImageModel``, ``SlitModel``,
+  and ``MultiSlitModel``, instead of ``DrizProductModel`` and ``MultiProductModel``,
+  which are deprecated. [#4552]
+
+- Remove pixel-by-pixel calls to wcs; copy input keywords to output for
+  more types of input data. [#4685]
+
+extract_2d
+----------
+
+- Change the source type for NIRSpec MOS sources with stellarity = -1 from
+  UNKOWN to POINT. [#4686]
+
+master_background
+-----------------
+
+- Updated step arguments in the documentation. [#4723]
+
+- Fix issue with files left open at end of step [#4775]
+
+outlier_detection
+-----------------
+
+- Updated step arguments in the documentation. [#4723]
+
+- Change outlier and resample DQ bit usage.  [#4726]
+  Default value of ``good_bits`` now includes all DQ flags except ``DO_NOT_USE``.
+  Also, newly flagged outliers are flagged with ``DO_NOT_USE + OUTLIER``.
+
+- Added a hardcoded declaration of a reasonable scale parameter for MIRI MRS as a stopgap
+  measure until a parameter reference file can pass one more cleanly. [#4778]
+
+pipeline
+--------
+
+- Update ``calwebb_detector1`` to reduce the memory used in processing. [#4643]
+
+- Update ``calwebb_coron3`` to return ``ImageModel`` instead of ``DrizProductModel``,
+  when necessary. [#4552]
+
+- Fix issue with files left open at end of ``calwebb_spec2`` [#4775]
+
+
+resample
+--------
+
+- Update to return resampled data in an ``ImageModel``, instead of
+  ``DrizProductModel``. [#4552]
+
+- Updated documentation to include step arguments and reference file
+  description. [#4723]
+
+- Change outlier and resample DQ bit usage.  [#4726]
+  The parameter ``good_bits`` has been removed in favor of allowing all
+  DQ flags except for ``DO_NOT_USE``
+
+resample_spec
+-------------
+
+- Update to return resampled data in a ``SlitModel`` or ``MultiSlitModel``,
+  instead of ``DrizProductModel`` or ``MultiProductModel``. [#4552]
+
+- Fix bug that was causing resampled MIRI LRS fixed-slit data to be all zero.
+  [#4552]
+
+- Enable model metadata blending [#4765]
+
+source_catalog
+--------------
+
+- Update to use ``ImageModel`` for resampled input data, instead of
+  ``DrizProductModel``. [#4552]
+
+- Updated step arguments in the documentation. [#4723]
+
+srctype
+-------
+
+- Change default source type for NRS_IFU from POINT to EXTENDED. Change the source
+  type for NIRSpec MOS sources with stellarity = -1 from UNKNOWN to POINT. [#4686]
+
+stpipe
+------
+
+- Unhide exceptions during CRDS steppars retrieval [#4691]
+
+- Add command line and environmental options to not retrieve steppars references [#4676]
+
+- Use only a single member of an association for CRDS STEPPARS checking [#4684]
+
+strun
+-----
+
+- Re-enable exeption tracebacks from strun for issues outside step processing [#4761]
+
+tweakreg
+--------
+
+- Updated step arguments in the documentation. [#4723]
+
+0.15.1 (2020-03-10)
+===================
+
+assign_wcs
+----------
+
+- Fix NIRISS WFSS FWPOS angle bugs [#4653]
+
+- Replaced FITS WCS transforms with GWCS transforms in computing bounding boxes of grisms slits. [#4665]
+
+datamodels
+----------
+
+- Update schema-editor to match documentation and clarify execution [#4587]
+
+- Remove the init file usage. Way too confusing [#4645]
+
+mrs_imatch
+----------
+
+- If the background polynomial contains any Nan Values the mrs_imatch step is skipped [#4642]
+
+stpipe
+------
+
+- Revert "JP-1090: Remove setLevel calls (#4621)" [#4667]
+
+
+0.15.0 (2020-02-28)
+===================
+
+assign_wcs
+----------
+
+- A ``ValueError`` is now raised if input data is missing ``xref_sci`` or
+  ``yref_sci`` keywords. [#4561]
+
+associations
+------------
+
+- Cull Association tests [#4610]
+
+- Correct PATTTYPE values in ASN level 3 rules [#4570]
+
 - Update act_id format to allow base 36 values in product name [#4282]
+
+- Refactor association logging configuration [#4510]
+
+combine_1d
+----------
+
+- Check output pixel numbers for NaN [#4409]
+
+datamodels
+----------
+
+- Update schema-editor to match documentation and clarify execution [#4578]
+
+- Force data model type setting on save [#4318]
+
+- Deprecate ``MIRIRampModel`` [#4328]
+
+- Make ``memmap=False`` be the default in ``datamodels`` [#4445]
+
+- Update schemas to add the ``id`` field and switch relative references
+  from filesystem paths to URIs.  Make ``schema_url`` absolute to facilitate
+  subclassing DataModel with schemas from other asdf extensions. [#4435]
+
+- Update core.schema.yaml to include new allowed values for PATTTYPE
+  [#4475, 4517, 4564]
+
+
+- DataModel.update() now has ``extra_fits=False`` kwarg that controls whether
+  an update happens from the ``extra_fits`` section of the datamodel.  Default
+  is to stop doing this by default, i.e. ``False``. [#4593]
+
+- Add units to filteroffset schema.  [#4595]
+
+- Updated ``slitdata.schema.yaml`` to include ``SRCRA`` and ``SRCDEC`` for
+  MOS slitlets to FITS SCI headers. These values are taken from the MOS
+  metadata file. [#4613]
+
+- Many keyword updates to bring us in-sync with KWD. [#4602, #4627]
+
+- Update schemas to use transform-1.2.0. [#4604]
+
+- Allow FileNotFoundError to be raised. [#4605]
+
+extract_1d
+----------
+
+- Updated to work with the current output from photom [#4369]
+
+- Fixed bug regarding background for NIRSpec or NIRISS (SOSS) point source
+  spectra. [#4459]
+
+extract_2d
+----------
+
+- For GRISM data, the variance arrays and INT_TIMES table are copied to output,
+  and keywords SLTSTRT1 and SLTSTRT2 are set to the pixel location of the
+  cutout in the input file. [#4504]
+
+- A ``ValueError`` is now raised if the input data is missing ``xref_sci`` or
+  ``yref_sci`` keywords. [#4561]
+
+- Fix the WCS subarray offsets for NIRCam TSGRISM cutouts [#4573]
+
+- Added ``source_ra`` and ``source_dec`` to MSA ``Slit`` with values
+  from the MSA metadata file. [#4613]
 
 master_background
 -----------------
 
 - Updated to fill the asn table and asn pool names. [#4240]
 
-=======
+model_blender
+-------------
+
+- Do not overwrite rules with defaults. [#4521]
+
+outlier_detection
+-----------------
+
+- Check for a zero array before sigma clipping [#4598]
+
+- Fix bug and logic pertaining to detecting if the background has been
+  subtracted or not. [#4523]
+
+pipeline
+--------
+
+- Hardwire required pipeline outputs in the pipeline. [#4578]
+
+- Added FGS_IMAGE to the exposure types to apply resampling in
+  calwebb_image2.py [#4421]
+
+- Make the naming and writing out of the resampled results to an `i2d` file
+  in `Image2Pipeline` consistent between config and class invocations [#4333]
+
+- Don't try to save the ``cube_build`` result if the step is skipped in the
+  ``calwebb_spec2`` pipeline. [#4478]
+
+- Use the `overwrite` option when saving the white-light photometry catalog in
+  the ``calwebb_tso3`` pipeline. [#4493]
+
+- Fixed error in formatting of example ASN file contents in the documents for
+  the ``calwebb_coron3`` and ``calwebb_ami3`` pipelines. [#4496]
+
+- Fixed the ``calwebb_tso3`` calculation of the number_of_integrations recorded
+  in the photometric table product to avoid ``astropy.table`` merge conflicts.
+  [#4502]
+
+photom
+------
+
+- Added ``spectral_order`` to the fields matching the ``photom`` reference files
+  for NIRCAM WFSS and TSGRISM modes. [#4538, 4558]
+
+refpix
+------
+
+- Interchanged alpha and beta reference arrays; use the DQ extension [#4575]
+
+- Fixed bugs in PR #4575; added unit tests [#4596]
+
+- Changed the data type of columns OUTPUT and ODD_EVEN in the section of the
+  schema for the DQ table in the NIRSpec IRS2 refpix reference file [#4618]
+
+set_telescope_pointing
+----------------------
+
+- Round S_REGION values in ``set_telescope_pointing`` [#4476]
+
+source_catalog
+--------------
+
+- Remove directory path when populating SCATFILE keyword. [#4597]
+
+srctype
+-------
+
+- Updated logic to populate SRCTYPE in all slit instances of slit-based
+  data models. [#4541]
+
+stpipe
+------
+
+- Fix sub-step nesting in parameter reference files [#4488]
+
+transforms
+----------
+
+- Removed ``TPCorr`` WCS correction model as it is now defined in ``tweakwcs``
+  as a compound model of elementary ``astropy`` and ``gwcs`` models. [#4790]
+
+- Refactored the WFSS transforms to improve performance. [#4603]
+
+- Added ``source_ra`` and ``source_dec`` to the ``Slit`` namedtuple
+  with default values of 0.0. These are populated from the MSA metadata
+  file. [#4613]
+
+
 tweakreg
 --------
 
@@ -19,6 +359,18 @@ tweakreg
   image groups has valid sources that can be used for image alignment.
   Now the code will gracefully skip the ``tweakreg`` step altogether in such
   situations. [#4299]
+
+wfs_combine
+-----------
+
+- Use float64 data types internally in ``wfs_combine`` so as not to cause an
+  error in ``scipy.signal.convolve``. [#4432]
+
+tso_photometry
+--------------
+
+- A ``ValueError`` is now raised if the input data for ``call`` is missing
+  ``crpix1`` or ``crpix2`` keywords. [#4561]
 
 
 0.14.2 (2019-11-18)
@@ -62,6 +414,11 @@ datamodels
 ----------
 
 - Updated the list of allowed NIRCam CORONMSK values in model schemas. [#4234]
+
+flat_field
+----------
+ - Updated handling of error arrays for FGS Guider data, which has not been run
+   through ramp fitting [#4309]
 
 lib
 ---
@@ -532,7 +889,7 @@ outlier_detection
 
 - Don't use NaNs or masked values in weight image for blotting. [#3651]
 
-- When calling cube_build for IFU data fixed selecting correct channels (MIRI) or 
+- When calling cube_build for IFU data fixed selecting correct channels (MIRI) or
   correct grating (NIRSPEC) [#4301]
 
 pipeline
@@ -1128,9 +1485,6 @@ master_background
 model_blender
 -------------
 
-
-mrs_imatch
-----------
 
 msaflagopen
 -----------
@@ -1973,6 +2327,7 @@ assign_wcs
 
 - fix input units to meters when filter=OPAQUE [#2134]
 
+
 associations
 ------------
 
@@ -2035,7 +2390,6 @@ extract_1d
 
 extract_2d
 ----------
-
 
 firstframe
 ----------

@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 
+import os
 from ..stpipe import Step
-from ..datamodels import DrizProductModel
 from . import source_catalog
-
+from .. import datamodels
 __all__ = ["SourceCatalogStep"]
 
 
@@ -13,8 +13,8 @@ class SourceCatalogStep(Step):
 
     Parameters
     -----------
-    input : str or `DrizProductModel`
-        A FITS filename or a `DrizProductModel` of a single drizzled
+    input : str or `ImageModel`
+        A FITS filename or a `ImageModel` of a single drizzled
         image.  The input image is assumed to be background subtracted.
     """
 
@@ -37,7 +37,7 @@ class SourceCatalogStep(Step):
         npixels = self.npixels
         deblend = self.deblend
 
-        with DrizProductModel(input) as model:
+        with datamodels.open(input)  as model:
             catalog = source_catalog.make_source_catalog(
                 model, kernel_fwhm, kernel_xsize, kernel_ysize, snr_threshold,
                 npixels, deblend=deblend)
@@ -56,7 +56,8 @@ class SourceCatalogStep(Step):
                 )
                 self.log.info('Wrote source catalog: {0}'
                               .format(cat_filepath))
-                model.meta.source_catalog.filename = cat_filepath
+                model.meta.source_catalog = os.path.basename(
+                    cat_filepath)
 
         # nothing is returned because this is the last step
         return

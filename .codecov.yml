@@ -1,0 +1,14 @@
+coverage:
+  status:
+    project:
+      default: off
+      unit:
+        flags: unit
+      nightly:
+        flags: nightly
+
+flags:
+  unit:
+    joined: true
+  nightly:
+    joined: false

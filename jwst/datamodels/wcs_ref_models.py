@@ -62,7 +62,7 @@ class DistortionModel(_SimpleModel):
     """
     A model for a reference file of type "distortion".
     """
-    schema_url = "distortion.schema"
+    schema_url = "http://stsci.edu/schemas/jwst_datamodel/distortion.schema"
     reftype = "distortion"
 
     def validate(self):
@@ -84,7 +84,7 @@ class DistortionMRSModel(ReferenceFileModel):
     """
     A model for a reference file of type "distortion" for the MIRI MRS.
     """
-    schema_url = "distortion_mrs.schema"
+    schema_url = "http://stsci.edu/schemas/jwst_datamodel/distortion_mrs.schema"
     reftype = "distortion"
 
     def __init__(self, init=None, x_model=None, y_model=None, alpha_model=None, beta_model=None,
@@ -158,7 +158,7 @@ class SpecwcsModel(_SimpleModel):
     used during extract_2D. See NIRCAMGrismModel and
     NIRISSGrismModel.
     """
-    schema_url = "specwcs.schema"
+    schema_url = "http://stsci.edu/schemas/jwst_datamodel/specwcs.schema"
     reftype = "specwcs"
 
     def validate(self):
@@ -204,7 +204,7 @@ class NIRCAMGrismModel(ReferenceFileModel):
           dispersion models
 
     """
-    schema_url = "specwcs_nircam_grism.schema"
+    schema_url = "http://stsci.edu/schemas/jwst_datamodel/specwcs_nircam_grism.schema"
     reftype = "specwcs"
 
     def __init__(self, init=None,
@@ -282,7 +282,7 @@ class NIRISSGrismModel(ReferenceFileModel):
     fwcpos_ref : float
         The reference value for the filter wheel position
     """
-    schema_url = "specwcs_niriss_grism.schema"
+    schema_url = "http://stsci.edu/schemas/jwst_datamodel/specwcs_niriss_grism.schema"
     reftype = "specwcs"
 
     def __init__(self, init=None,
@@ -339,7 +339,7 @@ class RegionsModel(ReferenceFileModel):
     """
     A model for a reference file of type "regions".
     """
-    schema_url = "regions.schema"
+    schema_url = "http://stsci.edu/schemas/jwst_datamodel/regions.schema"
     reftype = "regions"
 
     def __init__(self, init=None, regions=None, **kwargs):
@@ -394,7 +394,7 @@ class WavelengthrangeModel(ReferenceFileModel):
         The units for the wavelength data
 
     """
-    schema_url = "wavelengthrange.schema"
+    schema_url = "http://stsci.edu/schemas/jwst_datamodel/wavelengthrange.schema"
     reftype = "wavelengthrange"
 
     def __init__(self, init=None, wrange_selector=None, wrange=None,
@@ -433,7 +433,7 @@ class FPAModel(ReferenceFileModel):
     """
     A model for a NIRSPEC reference file of type "fpa".
     """
-    schema_url = "fpa.schema"
+    schema_url = "http://stsci.edu/schemas/jwst_datamodel/fpa.schema"
     reftype = "fpa"
 
     def __init__(self, init=None, nrs1_model=None, nrs2_model=None, **kwargs):
@@ -491,7 +491,7 @@ class IFUPostModel(ReferenceFileModel):
 
     """
 
-    schema_url = "ifupost.schema"
+    schema_url = "http://stsci.edu/schemas/jwst_datamodel/ifupost.schema"
     reftype = "ifupost"
 
     def __init__(self, init=None, slice_models=None, **kwargs):
@@ -526,7 +526,7 @@ class IFUSlicerModel(ReferenceFileModel):
     """
     A model for a NIRSPEC reference file of type "ifuslicer".
     """
-    schema_url = "ifuslicer.schema"
+    schema_url = "http://stsci.edu/schemas/jwst_datamodel/ifuslicer.schema"
     reftype = "ifuslicer"
 
     def __init__(self, init=None, model=None, data=None, **kwargs):
@@ -559,7 +559,7 @@ class MSAModel(ReferenceFileModel):
     """
     A model for a NIRSPEC reference file of type "msa".
     """
-    schema_url = "msa.schema"
+    schema_url = "http://stsci.edu/schemas/jwst_datamodel/msa.schema"
     reftype = "msa"
 
     def __init__(self, init=None, models=None, data=None, **kwargs):
@@ -595,7 +595,7 @@ class DisperserModel(ReferenceFileModel):
     """
     A model for a NIRSPEC reference file of type "disperser".
     """
-    schema_url = "disperser.schema"
+    schema_url = "http://stsci.edu/schemas/jwst_datamodel/disperser.schema"
     reftype = "disperser"
 
     def __init__(self, init=None, angle=None, gwa_tiltx=None, gwa_tilty=None,
@@ -664,40 +664,54 @@ class FilteroffsetModel(ReferenceFileModel):
     """
     A model for a NIRSPEC reference file of type "disperser".
     """
-    schema_url = "filteroffset.schema"
+    schema_url = "http://stsci.edu/schemas/jwst_datamodel/filteroffset.schema"
     reftype = "filteroffset"
 
-    def __init__(self, init=None, filters=None, **kwargs):
+    def __init__(self, init=None, filters=None, instrument=None, **kwargs):
         super(FilteroffsetModel, self).__init__(init, **kwargs)
         if filters is not None:
             self.filters = filters
+            if instrument is None or instrument not in ("NIRCAM", "MIRI", "NIRISS"):
+                raise ValueError("Please specify the instrument")
+            self.meta.instrument.name = instrument
 
     def populate_meta(self):
-        self.meta.instrument.name = "MIRI"
-        self.meta.instrument.detector = "MIRIMAGE"
-        self.meta.instrument.pfilter = "F1130W|F1140C|F2300C|F2100W|F1800W|\
-        F1550C|F560W|F2550WR|FND|F2550W|F1500W|F1000W|F1065C|F770W|F1280W|"
-
-    def on_save(self, path=None):
         self.meta.reftype = self.reftype
+        if self.meta.instrument.name == "MIRI":
+            self.meta.instrument.detector = "MIRIMAGE"
+            self.meta.instrument.pfilter = "F1130W|F1140C|F2300C|F2100W|F1800W|\
+            F1550C|F560W|F2550WR|FND|F2550W|F1500W|F1000W|F1065C|F770W|F1280W|"
+        elif self.meta.instrument.name == "NIRCAM":
+            self.meta.instrument.pfilter = "F070W|F090W|F115W|F140M|F150W|\
+            F162M|F164N|F150W2|F182M|F187N|F200W|F210M|F212N|"
+        elif self.meta.instrument.name == "NIRISS":
+            self.meta.instrument.pfilter = "F070W|F115W|F140M|F150W|F158M|\
+            F200W|F277W|F356W|F380M|F430M|F444W|F480M|"
+        else:
+            raise ValueError(f"Unsupported instrument: {self.meta.instrument.name}")
 
     def validate(self):
         super(FilteroffsetModel, self).validate()
-        try:
-            assert self.meta.instrument.name == "MIRI"
-            assert self.meta.instrument.detector == "MIRIMAGE"
-        except AssertionError as errmsg:
-            if self._strict_validation:
-                raise AssertionError(errmsg)
-            else:
-                warnings.warn(str(errmsg), ValidationWarning)
+
+        instrument_name = self.meta.instrument.name
+        nircam_channels = ["SHORT", "LONG"]
+        nircam_module = ["A", "B"]
+        if instrument_name not in ['MIRI', 'NIRCAM', 'NIRISS']:
+            self.print_err('Expected "meta.instrument.name" to be one of "NIRCAM, "MIRI" or "NIRISS"')
+        if instrument_name == "MIRI" and self.meta.instrument.detector != "MIRIMAGE":
+            self.print_err('Expected detector to be MIRIMAGE for instrument MIRI')
+        elif instrument_name == "NIRCAM":
+            if self.meta.instrument.channel not in nircam_channels:
+                self.print_err(f'Expected meta.instrument.channel for instrument NIRCAM to be one of {nircam_channels}')
+            if self.meta.instrument.module not in nircam_module:
+                self.print_err(f'Expected meta.instrument.module for instrument NIRCAM to be one of {nircam_module}')
 
 
 class IFUFOREModel(_SimpleModel):
     """
     A model for a NIRSPEC reference file of type "ifufore".
     """
-    schema_url = "ifufore.schema"
+    schema_url = "http://stsci.edu/schemas/jwst_datamodel/ifufore.schema"
     reftype = "ifufore"
 
     def populate_meta(self):
@@ -711,7 +725,7 @@ class CameraModel(_SimpleModel):
     """
     A model for a reference file of type "camera".
     """
-    schema_url = "camera.schema"
+    schema_url = "http://stsci.edu/schemas/jwst_datamodel/camera.schema"
     reftype = 'camera'
 
     def populate_meta(self):
@@ -727,7 +741,7 @@ class CollimatorModel(_SimpleModel):
     """
     A model for a reference file of type "collimator".
     """
-    schema_url = "collimator.schema"
+    schema_url = "http://stsci.edu/schemas/jwst_datamodel/collimator.schema"
     reftype = 'collimator'
 
     def populate_meta(self):
@@ -743,7 +757,7 @@ class OTEModel(_SimpleModel):
     """
     A model for a reference file of type "ote".
     """
-    schema_url = "ote.schema"
+    schema_url = "http://stsci.edu/schemas/jwst_datamodel/ote.schema"
     reftype = 'ote'
 
     def populate_meta(self):
@@ -759,7 +773,7 @@ class FOREModel(_SimpleModel):
     """
     A model for a reference file of type "fore".
     """
-    schema_url = "fore.schema"
+    schema_url = "http://stsci.edu/schemas/jwst_datamodel/fore.schema"
     reftype = 'fore'
 
     def populate_meta(self):
@@ -788,7 +802,7 @@ class FOREModel(_SimpleModel):
 class WaveCorrModel(ReferenceFileModel):
 
     reftype = "wavecorr"
-    schema_url = "wavecorr.schema"
+    schema_url = "http://stsci.edu/schemas/jwst_datamodel/wavecorr.schema"
 
     def __init__(self, init=None, apertures=None, **kwargs):
         super(WaveCorrModel, self).__init__(init, **kwargs)

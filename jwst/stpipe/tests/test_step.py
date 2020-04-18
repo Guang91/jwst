@@ -1,3 +1,4 @@
+import os
 from os.path import (
     abspath,
     dirname,
@@ -7,11 +8,11 @@ from os.path import (
 import pytest
 import jwst
 from jwst import datamodels
-from jwst.refpix import RefPixStep
-from jwst.stpipe import Step
-from jwst.stpipe.config_parser import ValidationError
-from jwst.stpipe import crds_client
 from jwst.extern.configobj.configobj import ConfigObj
+from jwst.refpix import RefPixStep
+from jwst.stpipe import Step, crds_client
+from jwst.stpipe import cmdline
+from jwst.stpipe.config_parser import ValidationError
 
 from .steps import EmptyPipeline, MakeListPipeline, MakeListStep
 from .util import t_path
@@ -32,6 +33,39 @@ REFPIXSTEP_CRDS_MIRI_PARS = {
     'use_side_ref_pixels': False
 }
 
+CRDS_ERROR_STRING = 'PARS-WITHDEFAULTSSTEP: No parameters found'
+
+@pytest.fixture(scope='module')
+def data_path():
+    """Provide a test data model"""
+    data_path = t_path(join('data', 'miri_data.fits'))
+    return data_path
+
+
+@pytest.mark.parametrize(
+    'arg, env_set, expected_fn', [
+        ('--disable-crds-steppars', None,   lambda stream: not CRDS_ERROR_STRING in stream),
+        ('--verbose',               None,   lambda stream: CRDS_ERROR_STRING in stream),
+        ('--verbose',               'true', lambda stream: not CRDS_ERROR_STRING in stream),
+        ('--verbose',               'True', lambda stream: not CRDS_ERROR_STRING in stream),
+        ('--verbose',               't',    lambda stream: not CRDS_ERROR_STRING in stream),
+    ]
+)
+def test_disable_crds_steppars_cmdline(capsys, data_path, arg, env_set, expected_fn):
+    """Test setting of disable_crds_steppars"""
+    if env_set:
+        os.environ['STPIPE_DISABLE_CRDS_STEPPARS'] = env_set
+
+    try:
+        step, step_class, positional, debug_on_exception = cmdline.just_the_step_from_cmdline(
+            ['jwst.stpipe.tests.steps.WithDefaultsStep', data_path, arg]
+        )
+    finally:
+        os.environ.pop('STPIPE_DISABLE_CRDS_STEPPARS', None)
+
+    captured = capsys.readouterr()
+    assert expected_fn(captured.err)
+
 
 @pytest.mark.xfail(
     reason='Need to make regression with actual CRDS data',
@@ -47,10 +81,10 @@ def test_parameters_from_crds():
 
 def test_parameters_from_crds_fail():
     """Test retrieval of parameters from CRDS"""
-    data = datamodels.open(t_path(join('data', 'miri_data.fits')))
-    data.meta.instrument.name = 'NIRSPEC'
-    pars = RefPixStep.get_config_from_reference(data)
-    assert not len(pars)
+    with datamodels.open(t_path(join('data', 'miri_data.fits'))) as data:
+        data.meta.instrument.name = 'NIRSPEC'
+        pars = RefPixStep.get_config_from_reference(data)
+        assert not len(pars)
 
 
 @pytest.mark.parametrize(
@@ -76,14 +110,17 @@ def test_saving_pars(tmpdir):
     """Save the step parameters from the commandline"""
     cfg_path = t_path(join('steps', 'jwst_generic_pars-makeliststep_0002.asdf'))
     saved_path = tmpdir.join('savepars.asdf')
-    Step.from_cmdline([
+    step = Step.from_cmdline([
         cfg_path,
         '--save-parameters',
         str(saved_path)
     ])
     assert saved_path.check()
-    saved = datamodels.StepParsModel(str(saved_path))
-    assert saved.parameters == ParsModelWithPar3.parameters
+
+    with datamodels.StepParsModel(str(saved_path)) as saved:
+        assert saved.parameters == ParsModelWithPar3.parameters
+
+    step.closeout()
 
 
 @pytest.mark.parametrize(
@@ -220,22 +257,23 @@ def test_getpars_model(step_obj, full_spec, expected):
             'search_output_file': True,
             'input_dir': None,
             'par1': 'Name the atomizer',
-            'make_list': {
-                'pre_hooks': [],
-                'post_hooks': [],
-                'output_file': None,
-                'output_dir': None,
-                'output_ext': '.fits',
-                'output_use_model': False,
-                'output_use_index': True,
-                'save_results': False,
-                'skip': False,
-                'suffix': None,
-                'search_output_file': True,
-                'input_dir': None,
-                'par3': False,
-                'par1': 'float() # Control the frobulization',
-                'par2': 'string() # Reticulate the splines'
+            'steps': {
+                'make_list': {'pre_hooks': [],
+                              'post_hooks': [],
+                              'output_file': None,
+                              'output_dir': None,
+                              'output_ext': '.fits',
+                              'output_use_model': False,
+                              'output_use_index': True,
+                              'save_results': False,
+                              'skip': False,
+                              'suffix': None,
+                              'search_output_file': True,
+                              'input_dir': None,
+                              'par3': False,
+                              'par1': 'float() # Control the frobulization',
+                              'par2': 'string() # Reticulate the splines'
+                }
             }
         }),
         #
@@ -257,22 +295,24 @@ def test_getpars_model(step_obj, full_spec, expected):
             'search_output_file': True,
             'input_dir': '',
             'par1': 'Instantiated',
-            'make_list': {
-                'pre_hooks': [],
-                'post_hooks': [],
-                'output_file': None,
-                'output_dir': None,
-                'output_ext': '.fits',
-                'output_use_model': False,
-                'output_use_index': True,
-                'save_results': False,
-                'skip': False,
-                'suffix': None,
-                'search_output_file': True,
-                'input_dir': '',
-                'par1': 0.0,
-                'par2': 'sub-instantiated',
-                'par3': False
+            'steps': {
+                'make_list': {
+                    'pre_hooks': [],
+                    'post_hooks': [],
+                    'output_file': None,
+                    'output_dir': None,
+                    'output_ext': '.fits',
+                    'output_use_model': False,
+                    'output_use_index': True,
+                    'save_results': False,
+                    'skip': False,
+                    'suffix': None,
+                    'search_output_file': True,
+                    'input_dir': '',
+                    'par1': 0.0,
+                    'par2': 'sub-instantiated',
+                    'par3': False
+                }
             }
         }),
         #
@@ -291,7 +331,8 @@ def test_getpars_model(step_obj, full_spec, expected):
             'suffix': None,
             'search_output_file': True,
             'input_dir': None,
-            'par1': 'Name the atomizer'
+            'par1': 'Name the atomizer',
+            'steps': {}
         }),
         #
         # Pipeline instance without any sub-steps
@@ -309,7 +350,8 @@ def test_getpars_model(step_obj, full_spec, expected):
             'suffix': None,
             'search_output_file': True,
             'input_dir': '',
-            'par1': 'Instantiated'
+            'par1': 'Instantiated',
+            'steps': {}
         }),
         # ######################################
         # Test `get_pars` with `full_spec=False`
@@ -335,10 +377,12 @@ def test_getpars_model(step_obj, full_spec, expected):
         #
         (MakeListPipeline, False, {
             'par1': 'Name the atomizer',
-            'make_list': {
-                'par3': False,
-                'par1': 'float() # Control the frobulization',
-                'par2': 'string() # Reticulate the splines'
+            'steps': {
+                'make_list': {
+                    'par3': False,
+                    'par1': 'float() # Control the frobulization',
+                    'par2': 'string() # Reticulate the splines'
+                }
             }
         }),
         #
@@ -348,23 +392,27 @@ def test_getpars_model(step_obj, full_spec, expected):
             par1='Instantiated', steps={'make_list': {'par1': 0., 'par2': 'sub-instantiated'}}
         ), False, {
             'par1': 'Instantiated',
-            'make_list': {
-                'par1': 0.0,
-                'par2': 'sub-instantiated',
-                'par3': False
+            'steps': {
+                'make_list': {
+                    'par1': 0.0,
+                    'par2': 'sub-instantiated',
+                    'par3': False
+                }
             }
         }),
         #
         # Pipeline class without any sub-steps
         #
         (EmptyPipeline, False, {
-            'par1': 'Name the atomizer'
+            'par1': 'Name the atomizer',
+            'steps': {}
         }),
         #
         # Pipeline instance without any sub-steps
         #
         (EmptyPipeline(par1='Instantiated'), False, {
-            'par1': 'Instantiated'
+            'par1': 'Instantiated',
+            'steps': {}
         }),
     ]
 )

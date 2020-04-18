@@ -59,7 +59,7 @@ class OutlierDetectionStep(Step):
         backg = float(default=0.0)
         save_intermediate_results = boolean(default=False)
         resample_data = boolean(default=True)
-        good_bits = integer(default=6)
+        good_bits = string(default="~DO_NOT_USE")  # DQ flags to allow
         scale_detection = boolean(default=False)
         search_output_file = boolean(default=False)
     """
@@ -85,6 +85,7 @@ class OutlierDetectionStep(Step):
                 _make_output_path = self.search_attr(
                     '_make_output_path', parent_first=True
                 )
+
                 self._make_output_path = partial(
                     _make_output_path,
                     asn_id=asn_id

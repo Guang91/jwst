@@ -14,9 +14,13 @@ def match_det2cube_msm(naxis1, naxis2, naxis3,
                        spaxel_flux,
                        spaxel_weight,
                        spaxel_iflux,
+                       spaxel_var,
                        flux,
+                       err,
                        coord1, coord2, wave,
-                       rois_pixel, roiw_pixel, weight_pixel, softrad_pixel):
+                       weighting_type,
+                       rois_pixel, roiw_pixel, weight_pixel,
+                       softrad_pixel, scalerad_pixel):
 
     """ Map the detector pixels to the cube spaxels using the MSM parameters
 
@@ -59,8 +63,13 @@ def match_det2cube_msm(naxis1, naxis2, naxis3,
        contains the summed weights assocated with the detector fluxes
     spaxel_iflux : numpy.ndarray
        number of detector pixels falling with roi of spaxel center
+    spaxel_var: numpy.ndarray
+       contains the weighted summed variance within the roi
     flux : numpy.ndarray
        array of detector fluxes associated with each position in
+       coorr1, coord2, wave
+    err: numpy.ndarray
+       array of detector errors associated with each position in
        coorr1, coord2, wave
     coord1 : numpy.ndarray
        contains the spatial coordinate for 1st dimension for the mapped
@@ -73,7 +82,7 @@ def match_det2cube_msm(naxis1, naxis2, naxis3,
 
     Returns
     -------
-    spaxel_flux, spaxel_weight, and spaxel_ifux updated with the information
+    spaxel_flux, spaxel_weight, spaxel_ifux, and spaxel_var updated with the information
     from the detector pixels that fall within the roi if the spaxel center.
     """
 
@@ -101,7 +110,6 @@ def match_det2cube_msm(naxis1, naxis2, naxis3,
         radius = np.sqrt(xdistance * xdistance + ydistance * ydistance)
         indexr = np.where(radius <= rois_pixel[ipt])
         indexz = np.where(abs(zcoord - wave[ipt]) <= roiw_pixel[ipt])
-
         # on the wavelength boundaries the point cloud may not be in the IFUCube
         # the edge cases are skipped and not included in final IFUcube to avoid noisy results
         # Left commented code for checking later for NIRSPEC the spectral size
@@ -134,17 +142,22 @@ def match_det2cube_msm(naxis1, naxis2, naxis3,
             d3_matrix = np.tile(d3 * d3, [dxy_matrix.shape[0], 1])
 
             wdistance = dxy_matrix + d3_matrix
-            weight_distance = np.power(np.sqrt(wdistance), weight_pixel[ipt])
-            weight_distance[weight_distance < lower_limit] = lower_limit
-            weight_distance = 1.0 / weight_distance
+            if weighting_type == 'msm':
+                weight_distance = np.power(np.sqrt(wdistance), weight_pixel[ipt])
+                weight_distance[weight_distance < lower_limit] = lower_limit
+                weight_distance = 1.0 / weight_distance
+            elif weighting_type == 'emsm':
+                weight_distance = np.exp(-wdistance/(scalerad_pixel[ipt]/cdelt1))
+
             weight_distance = weight_distance.flatten('F')
             weighted_flux = weight_distance * flux[ipt]
+            weighted_var = (weight_distance * err[ipt]) * (weight_distance * err[ipt])
 
             icube_index = [iz * nplane + ir for iz in indexz[0] for ir in indexr[0]]
             spaxel_flux[icube_index] = spaxel_flux[icube_index] + weighted_flux
             spaxel_weight[icube_index] = spaxel_weight[icube_index] + weight_distance
             spaxel_iflux[icube_index] = spaxel_iflux[icube_index] + 1
-
+            spaxel_var[icube_index] = spaxel_var[icube_index] + weighted_var
 #    print('Number of pixels not in ifu cube too low wavelength', ilow)
 #    print('Number of pixels not in ifu cube too high wavelength', ihigh)
 #    print('Number of pixels not in ifu cube not match', imatch)
@@ -157,11 +170,16 @@ def match_det2cube_miripsf(alpha_resol, beta_resol, wave_resol,
                            spaxel_flux,
                            spaxel_weight,
                            spaxel_iflux,
+                           spaxel_var,
                            spaxel_alpha, spaxel_beta, spaxel_wave,
                            flux,
+                           err,
                            coord1, coord2, wave, alpha_det, beta_det,
-                           rois_pixel, roiw_pixel, weight_pixel,
-                           softrad_pixel):
+                           weighting_type,
+                           rois_pixel, roiw_pixel,
+                           weight_pixel,
+                           softrad_pixel,
+                           scalerad_pixel):
     """ Map the detector pixels to the cube spaxels using miri PSF weighting
 
     Map coordinates coord1,coord2, and wave of the point cloud to which
@@ -198,8 +216,13 @@ def match_det2cube_miripsf(alpha_resol, beta_resol, wave_resol,
        contains the summed weights assocated with the detector fluxes
     spaxel_iflux : numpy.ndarray
        number of detector pixels falling with roi of spaxel center
+    spaxel_var: numpy.ndarray
+       contains the weighted summed variance within the roi
     flux : numpy.ndarray
        array of detector fluxes associated with each position in
+       coorr1, coord2, wave
+    err: numpy.ndarray
+       array of detector errors associated with each position in
        coorr1, coord2, wave
     spaxel_alpha : numpy.ndarray
        alpha value of spaxel centers
@@ -230,7 +253,7 @@ def match_det2cube_miripsf(alpha_resol, beta_resol, wave_resol,
 
     Returns
     -------
-    spaxel_flux, spaxel_weight, and spaxel_ifux updated with the information
+    spaxel_flux, spaxel_weight, spaxel_ifux, spaxel_var updated with the information
     from the detector pixels that fall within the roi if the spaxel center.
 
     """
@@ -282,17 +305,24 @@ def match_det2cube_miripsf(alpha_resol, beta_resol, wave_resol,
 
                 # only included the spatial dimensions
                 wdistance = (xn * xn + yn * yn + wn * wn)
-                weight_distance = np.power(np.sqrt(wdistance), weight_pixel[ipt])
+
 # ________________________________________________________________________________
-# We have found the weight_distance based on instrument type
+                # MSM weighting based on 1/r**power
+                if weighting_type == 'msm':
+                    weight_distance = np.power(np.sqrt(wdistance), weight_pixel[ipt])
+                    if weight_distance < lower_limit:
+                        weight_distance = lower_limit
+                        weight_distance = 1.0 / weight_distance
+                elif weighting_type == 'emsm':
+                    weight_distance = scalerad_pixel[ipt] * np.exp(1.0/wdistance)
 
-                if weight_distance < lower_limit:
-                    weight_distance = lower_limit
-                weight_distance = 1.0 / weight_distance
+                weighted_flux = weight_distance * flux[ipt]
+                weighted_var = (weight_distance * err[ipt]) * (weight_distance * err[ipt])
 
-                spaxel_flux[cube_index] = spaxel_flux[cube_index] + weight_distance * flux[ipt]
+                spaxel_flux[cube_index] = spaxel_flux[cube_index] + weighted_flux
                 spaxel_weight[cube_index] = spaxel_weight[cube_index] + weight_distance
                 spaxel_iflux[cube_index] = spaxel_iflux[cube_index] + 1
+                spaxel_var[cube_index] = spaxel_var[cube_index] + weighted_var
 # _______________________________________________________________________
 
 
